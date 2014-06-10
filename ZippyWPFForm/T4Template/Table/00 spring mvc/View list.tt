@@ -1,0 +1,65 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".jsp" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+var javaClassName = ZippyCoder.Helper.ToJavaClassName(table.Name);
+var varName =  ZippyCoder.Helper.ToJavaPropertyName(table.Name);
+
+#>
+<%@ page session="false" language="java" pageEncoding="UTF-8"
+         contentType="text/html;charset=UTF-8" %>
+<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+    <title><#=table.Title#></title>
+</head>
+<body>
+<div class="panel panel-default">
+    <div class="panel-heading clearfix">
+        <h4 class="pull-left"><#=table.Title#>列表</h4>
+
+        <div class="pull-right">
+            <a class="btn btn-primary btn-small" href="edit">新增</a></div>
+    </div>
+    <div class="panel-body">
+        <table class="table table-bordered">
+            <tr>
+				<#
+				foreach (Col col in table.Cols){
+					if ((col.UIColType & ZippyCoder.Entity.UIColTypes.Listable)== ZippyCoder.Entity.UIColTypes.Listable){
+				#>
+                    <th>
+                        <#=col.Title#>
+                    </th>				
+				<#
+					}
+				}#>
+					<th>管理</th>
+            </tr>
+
+            <c:forEach items="${list}" var="item">
+                <tr data-id="${item.id}">
+				<#
+				foreach (Col col in table.Cols){
+					if ((col.UIColType & ZippyCoder.Entity.UIColTypes.Listable)== ZippyCoder.Entity.UIColTypes.Listable){
+					string colName = ZippyCoder.Helper.ToJavaPropertyName(col.Name);
+				#>
+                    <td>
+						${item.<#=colName#>}                        
+                    </td>				
+				<#
+					}
+				}#>
+                    <td><a href="#" class="modi btn btn-small btn-primary">修改</a>
+                        <a href="#" class="del btn btn-small btn-danger">删除</a></td>
+                </tr>
+            </c:forEach>
+        </table>
+
+    </div>
+</div>
+</body>
+</html>

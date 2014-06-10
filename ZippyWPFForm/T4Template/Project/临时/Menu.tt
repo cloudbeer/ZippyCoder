@@ -1,0 +1,13 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".txt" #>
+
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+foreach (Table table in project.Tables) {
+
+ WriteLine("<li><a href=\"javascript:gotoUrl('/" + table.Name.ToLower() + "')\">" + table.Title + "</a></li>");
+
+}
+#>

@@ -1,0 +1,48 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".sql" #>
+
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+
+foreach (Table table in project.Tables) { #>
+CREATE TABLE [<#=table.Name#>] (
+<# 
+	int j = 0;
+	foreach(Col col in table.Cols) { 
+#>
+	[<#=col.Name#>] <#=col.DataType.ToString().ToUpper()#> <#	
+        if (!string.IsNullOrEmpty(col.Length))
+        {
+            if (col.DataType != System.Data.SqlDbType.Text && col.DataType != System.Data.SqlDbType.Int && col.DataType != System.Data.SqlDbType.Date &&
+               col.DataType != System.Data.SqlDbType.DateTime && col.DataType != System.Data.SqlDbType.DateTime2 && col.DataType != System.Data.SqlDbType.Money )
+               Write("(" + col.Length + ") ");
+        }
+        if (col.AutoIncrease)
+            Write("IDENTITY(1,1) ");
+
+        if (col.IsPK)
+            Write("PRIMARY KEY ");
+        else if (col.Unique)
+            Write("UNIQUE ");
+        else if (col.IsNull)
+            Write("NULL ");
+        else
+            Write("NOT NULL ");
+
+        if (col.Default != "")
+            Write("DEFAULT " + col.Default + " ");
+        if (j != table.Cols.Count - 1)
+            Write(",");
+        WriteLine("");
+        j++;
+	#>
+<#
+	}
+#>
+);
+GO
+
+<# }#>
+

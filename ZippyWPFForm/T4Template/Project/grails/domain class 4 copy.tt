@@ -1,0 +1,27 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".domain.fields.txt" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+foreach (Table table in project.Tables) { #>
+
+
+class <#=table.Name#> {
+
+<# 
+	foreach(Col col in table.Cols) { 
+	
+	var colType = ZippyCoder.TypeConverter.ToGroovyType(col.DataType);
+			
+#>
+	<#=colType#> <#=col.Name#>
+<#
+	}
+#>
+}
+
+
+
+
+<# }#>

@@ -1,0 +1,46 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cs" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+#>
+using Microsoft.Practices.EnterpriseLibrary.Validation;
+using Microsoft.Practices.EnterpriseLibrary.Validation.Validators;
+using System;
+using Zippy.Data.Mapping;
+
+namespace <#=project.Namespace#>.Entity
+{
+	[DataTable(Name="<#=table.Name#>", Title="<#=table.Title#>")]
+	public class <#=table.Name#>
+	{
+<# foreach (Col col in table.Cols) 
+{	
+	if (col.IsCoding)
+	{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	int minLength = 0;
+	#>
+<# if (!col.IsNull && !col.AutoIncrease){
+			WriteLine("		[NotNullValidator(MessageTemplate=\"{0}\", Tag=\"{1}\")]", "不能为空", "NotNull");
+		} else if (colType==typeof(string) && !string.IsNullOrEmpty(col.ValidateRegex)){
+			WriteLine("	    [ValidatorComposition(CompositionType.Or)]");
+			WriteLine("	    [NotNullValidator(Negated = true)]");			
+			WriteLine("		[RegexValidator(" + col.ValidateRegex + ", MessageTemplate=\"{0}\", Tag=\"{1}\")]", "不合法的输入", "Regex");
+		} else if (colType==typeof(string) && col.DataType!=System.Data.SqlDbType.Text){
+			WriteLine("	    [ValidatorComposition(CompositionType.Or)]");
+			WriteLine("	    [NotNullValidator(Negated = true)]");			
+			WriteLine("	    [StringLengthValidator(" + col.Length + ", MessageTemplate=\"{0}\", Tag=\"{1}\")]", "字符串长度不满足要求 [" + minLength + "-"+ col.Length + "]", "StringLength");
+}#>
+		[DataField(Name="<#=col.Name#>", Title="<#=col.Title#>", <#=col.IsPK?"IsPrimaryKey=true, ":""#><#=col.AutoIncrease?"AutoIncrement=true, ":""#><#=!col.IsNull?"AllowNull=false, ":""#>DbType=System.Data.DbType.<#=xtyppe#>, SqlDbType=System.Data.SqlDbType.<#=col.DataType#>)]
+	    public virtual <#=colType.Name#><#=(colType.IsValueType ? "?" : "")#> <#=col.Name#> {get; set; }
+		
+<#
+	}
+}
+#>
+	}
+	
+}

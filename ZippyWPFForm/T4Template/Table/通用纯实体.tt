@@ -1,0 +1,36 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cs" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+#>
+using System;
+
+namespace <#=project.Namespace#>.Model
+{
+	public class <#=table.Name#>
+	{
+<# foreach (Col col in table.Cols) 
+{	
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	#>
+	    public virtual <#=colType.Name#><#=(colType.IsValueType ? "?" : "")#> <#=col.Name#> {get; set; }
+<#
+}
+#>
+	}
+	
+<# foreach (Col col in table.Cols) {
+	if (!string.IsNullOrEmpty(col.EnumType))
+	{#>	
+	public enum <#=col.EnumType #>
+	{
+		Default = 1
+	}
+<#
+	}
+}
+#>
+}

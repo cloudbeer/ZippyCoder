@@ -1,0 +1,158 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".aspx" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+Type pkType = ZippyCoder.TypeConverter.ToNetType(colPK.DataType);
+
+#>
+<%@ Page Language="C#" MasterPageFile="~/Views/Shared/Site.Master" Inherits="System.Web.Mvc.ViewPage<<#=project.Namespace#>.Entity.<#=table.Name#>>" %>
+<%@ Import Namespace="<#=project.Namespace#>.Entity" %>
+<%@ Import Namespace="<#=project.Namespace#>.Entity.Helper" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server"> 
+	<%=R.V("Modify") %><%=R.V("<#=table.Name#>")%>   
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
+    <zxp:XPanel runat="server" id="panel" Title="<%$R:<#=table.Name#>%>">
+    <% using (Html.BeginForm()) {%>
+        <zxp:XEditBox ID="editBox" runat="server">
+            <table class="editTable">
+<#
+			
+bool includeDatePickJs = false;
+bool includeFckJs = false;
+System.Text.StringBuilder sbStartJs = new System.Text.StringBuilder();
+
+foreach (Col col in table.Cols)
+{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable) 
+	{
+#>
+                <tr>
+                    <td class="label">
+                        <%=R.V("<#=col.Name#>")%>:
+                    </td>
+                    <td class="value">
+<#if (col.RenderType == RenderTypes.TextBox) {#>
+						<%= Html.TextBox("<#=col.Name#>", Model.<#=col.Name#>, new { @class = "<#=col.CssClass#> <#=col.CssClassLength#>" })%>
+<#
+	if (colType == typeof(DateTime)){
+		includeDatePickJs = true;
+		sbStartJs.AppendLine("        $(\"#" + col.Name + "\").datepicker();");
+	}
+} else if (col.RenderType == RenderTypes.TextArea) {#>
+                		<%= Html.TextArea("<#=col.Name#>", Model.<#=col.Name#>, new { @class = "<#=col.CssClass#> <#=col.CssClassLength#>", rows="10" })%>
+<#} else if (col.RenderType == RenderTypes.DropDownList) {#>
+<#		if (!string.IsNullOrEmpty(col.RefTable)) {#>
+						<%= ViewData["<#=col.Name#>Entities"]%>
+<#		} else if (!string.IsNullOrEmpty(col.EnumType)) {#>
+                		<%= Html.DropDownList("<#=col.Name#>")%>
+<#		}#>
+<#} else if (col.RenderType == RenderTypes.CheckBoxList && !string.IsNullOrEmpty(col.EnumType)) {#>                		
+                		<!--这次加入一个CheckBoxList-->
+                		<%= R.B("<#=col.Name#>", typeof(<#=col.EnumType#>), "checkbox", Model.<#=col.Name#>)%>
+<#} else if (col.RenderType == RenderTypes.RadioButtonList && !string.IsNullOrEmpty(col.EnumType)) {#>
+                		<!--这次加入一个RadioBoxList-->
+                		<%= R.B("<#=col.Name#>", typeof(<#=col.EnumType#>), "radio", Model.<#=col.Name#>)%>
+<#} else if (col.RenderType == RenderTypes.Html) {
+	includeFckJs = true;
+	sbStartJs.AppendLine("		var oFCKeditor = new FCKeditor('" + col.Name + "') ;");
+    sbStartJs.AppendLine("		oFCKeditor.ToolbarSet = 'Default' ;");
+    sbStartJs.AppendLine("		oFCKeditor.BasePath	= sBasePath ;");
+    sbStartJs.AppendLine("		oFCKeditor.Height	= 400 ;");
+    sbStartJs.AppendLine("		oFCKeditor.ReplaceTextarea() ;");
+	#>                
+						<%= Html.TextArea("<#=col.Name#>", Model.<#=col.Name#>)%>			
+<#}#>
+						<%= Html.ValidationMessage("<#=col.Name#> string length error")%>
+						<%= Html.ValidationMessage("<#=col.Name#> required")%>
+						<%= Html.ValidationMessage("<#=col.Name#> illegal input")%>
+                    </td>
+                </tr>
+<#
+	}
+}
+#>
+            </table>
+            <zxp:XActionBox runat="server" ID="actionBox">
+                <input type="submit" value="<%=R.V("Save")%>"  class="button btnSave" />
+                <!--<input type="button" value="<%=R.V("Cancel")%>" id="btnCancel"  class="button btCancel" />-->
+            </zxp:XActionBox>
+        </zxp:XEditBox>
+    <% } %>
+	</zxp:XPanel>
+
+<#
+				if (includeDatePickJs) 
+				{
+#>
+    <link href='/Scripts/jqueryui/ui.datepicker.css' type='text/css' rel='stylesheet' />
+    <script src='/Scripts/jqueryui/ui.datepicker.js' type='text/javascript'></script>
+    <script src='/Scripts/jqueryui/ui.datepicker-zh_CN.js' type='text/javascript'></script>
+<#
+				}
+#>
+
+<#
+				if (includeFckJs) 
+				{
+#>
+	<script type="text/javascript" src="/Scripts/FCKEditor/fckeditor.js"></script> 
+	<script type="text/javascript"> 
+	var sBasePath = "/Scripts/fckeditor/"; 
+	</script>
+
+<#
+				}
+#>
+    <script type="text/javascript">
+    $(function(){
+<#=sbStartJs.ToString()#>
+    });
+
+    function del(pkid, sender){
+        if (!confirm('<%=R.V("Confirm delete") %>')) return;
+        url = '/<#=table.Name#>/Delete/' + pkid;
+        $.post(url, null, function(res){
+            if (res=='1'){
+                $(sender).parent().parent().remove();
+            }else{
+                alert('<%=R.V("Error operation") %>');
+            }
+            
+        });
+    }
+    </script>
+	
+    <script type="text/C#" runat="server">
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            Zippy.Web.UI.XControls.XHtmlAnchor aList = new Zippy.Web.UI.XControls.XHtmlAnchor();
+            aList.InnerHtml = R.V("List");
+            aList.HRef = "/<#=table.Name#>/Index";
+            panel.ToolButtons.Add(aList);
+			
+            Zippy.Web.UI.XControls.XHtmlAnchor aCreate = new Zippy.Web.UI.XControls.XHtmlAnchor();
+            aCreate.InnerHtml = R.V("Create");
+            <#
+            if (pkType==typeof(Guid)) {            
+            #>
+				aCreate.HRef = "/<#=table.Name#>/Edit/00000000-0000-0000-0000-000000000000";            
+            <#
+            } else {            
+            #>
+				aCreate.HRef = "/<#=table.Name#>/Edit/0";
+            <#
+            }
+            #>
+            panel.ToolButtons.Add(aCreate);
+        }
+    </script>
+        
+</asp:Content>

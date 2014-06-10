@@ -1,0 +1,87 @@
+﻿<Page x:Class="ZippyWPFForm.PPT4Setting"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="T4 输出设定">
+    <Page.Resources>
+        <DataTemplate x:Key="listBoxTemplate">
+            <StackPanel Margin="3" Orientation="Horizontal">
+                <CheckBox IsChecked="{Binding IsCoding}"></CheckBox>
+                <TextBlock Text="{Binding Title}"></TextBlock>
+                <TextBlock Text="{Binding Name}">
+                </TextBlock>
+            </StackPanel>
+        </DataTemplate>
+    </Page.Resources>
+    <Grid >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="260"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="65"/>
+        </Grid.RowDefinitions>
+        <Label Grid.Row="0" Name="xTitle" HorizontalAlignment="Left" Padding="10 10 10 20" Grid.ColumnSpan="2" FontWeight="Bold" FontSize="20" FontFamily="微软雅黑">设置T4的生成属性</Label>
+        <Label Height="28" Width="80" Grid.Row="1" HorizontalAlignment="Right">生成路径：</Label>
+        <Label Height="28" Width="80" Grid.Row="2" HorizontalAlignment="Right">文件加缀 ：</Label>
+        <Label Height="28" Width="80" Grid.Row="3" HorizontalAlignment="Right">文件去缀 ：</Label>
+        <Label Height="28" Width="80" Grid.Row="4" HorizontalAlignment="Right">独立目录 ：</Label>
+        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+            <TextBox Height="24"  Width="220" Name="tbxPath"  Margin="2"/>
+            <Button Margin="2" Name="btnChooseFile" Click="btnChooseFile_Click">选择...</Button>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+            <TextBox Height="24"  Width="180" Name="tbxNamePattern"  Margin="2" Text="{}{0}"/>
+            <Label Margin="2">语法：{0}__List</Label>
+        </StackPanel>
+        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
+            <TextBox Height="24"  Width="180" Name="tbxFixDel"  Margin="2" Text="dnt_"/>
+            <Label Margin="2">仅去前缀</Label>
+        </StackPanel>
+        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
+            <CheckBox Name="cbxSepDir" Margin="2" VerticalAlignment="Center">为每个文件生成一个目录</CheckBox>
+        </StackPanel>
+
+        <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Name="btnOk"  Width="100"  Click="btnOk_Click" Margin="2" IsDefault="True">确定</Button>
+            <Button Name="btnCancel" Width="100"  Click="btnCancel_Click" Margin="2" IsCancel="True">取消</Button>
+        </StackPanel>
+        <Grid Grid.Column="0" Grid.Row="5" Grid.ColumnSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25" />
+                <RowDefinition Height="200"/>
+                <RowDefinition Height="25" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <TextBlock Padding="4">请钩选你要生成的表（实体）</TextBlock>
+            <TextBlock Grid.Column="1" Padding="4">请钩选你要生成的字段</TextBlock>
+            <ListBox Grid.Row="1" Grid.Column="0"  ItemTemplate="{StaticResource listBoxTemplate}" Name="lvTable" SelectionChanged="lvTable_SelectionChanged" ></ListBox>
+
+            <ListBox Grid.Row="1" Grid.Column="1"  ItemTemplate="{StaticResource listBoxTemplate}" Name="lvCol"></ListBox>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0 2 0 0" >
+                <Button Name="btnChooseAllTable" Click="btnChooseAllTable_Click">全选</Button>
+                <Button Margin="2 0 0 0" Name="btnDeChooseAllTable" Click="btnDeChooseAllTable_Click">全部取消</Button>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0 2 0 0" >
+                <Button Name="btnChooseAllCol" Click="btnChooseAllCol_Click">全选</Button>
+                <Button Name="btnDeChooseAllCol" Margin="2 0 0 0" Click="btnDeChooseAllCol_Click">全部取消</Button>
+            </StackPanel>
+        </Grid>
+        <StackPanel Grid.Row="7" Grid.Column="0" Orientation="Vertical"  Grid.ColumnSpan="2" HorizontalAlignment="Stretch" Name="spProgress" Visibility="Hidden">
+            <TextBlock Name="tipCreate" Padding="4"></TextBlock>
+            <ProgressBar  Height="20" Background="Azure" Name="pbCreate">
+            </ProgressBar>
+        </StackPanel>
+    </Grid>
+</Page>

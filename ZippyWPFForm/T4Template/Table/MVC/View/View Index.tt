@@ -1,0 +1,65 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".aspx" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+#>
+<%@ Page Title="<%$Resources:<#=project.Namespace#>Entity,<#=table.Name#>%>" Language="C#" 
+MasterPageFile="~/Views/Shared/Site.Master" 
+Inherits="System.Web.Mvc.ViewPage<IEnumerable<<#=project.Namespace#>.Models.<#=table.Name#>>>" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">    
+	<%=Resources.<#=project.Namespace#>Entity.<#=table.Name#>%>
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
+    <h2>
+        Index</h2>
+    <zxp:XPanel runat="server" ID='panel' Title="<%$Resources:X12PMEntity,X12Project%>">
+        <zxp:XListBox runat="server">
+            <table class="table">
+                <tr class="header">
+<#
+				foreach (Col col in table.Cols){
+					if ((col.UIColType & ZippyCoder.Entity.UIColTypes.Listable)== ZippyCoder.Entity.UIColTypes.Listable){#>
+                    <th>
+                        <%=Resources.<#=project.Namespace#>Entity.<#=table.Name#>_<#=col.Name#>%>
+                    </th>				
+<#
+					}
+				}#>
+                </tr>
+				<%
+                    int rowNum = 0;
+                    foreach (var item in Model)
+                    { %>
+                <tr class='<%=(rowNum%2==0)?"odd":"even" %>'>
+<#
+				foreach (Col col in table.Cols){
+					if ((col.UIColType & ZippyCoder.Entity.UIColTypes.Listable)== ZippyCoder.Entity.UIColTypes.Listable){
+					#>
+                    <td>
+					 <%= Html.Encode(item.<#=col.Name#>) %>
+                    </td>
+<#
+					}
+				}#>
+				</tr>
+				
+				<% 
+                    rowNum++;
+                } %>
+            </table>
+        </zxp:XListBox>
+    </zxp:XPanel>
+    <script type="text/C#" runat="server">
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            HtmlAnchor aCreate = new HtmlAnchor();
+            aCreate.InnerHtml = Resources.Common.Label_Create;
+            aCreate.HRef = "/<#=table.Name#>/Create";
+            panel.ToolButtons.Add(aCreate);
+        }
+    </script>
+        
+</asp:Content>

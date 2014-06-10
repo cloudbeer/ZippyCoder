@@ -1,0 +1,33 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cs" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+#>
+using System;
+using Zippy.Data.Mapping;
+
+namespace <#=project.Namespace#>.Entity
+{
+	[DataTable(Name="<#=table.Name#>", Title="<#=table.Title#>")]
+	public class <#=table.Name#>
+	{
+<# foreach (Col col in table.Cols) 
+{	
+	if (col.IsCoding)
+	{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	#>
+
+		[DataField(Name="<#=col.Name#>", Title="<#=col.Title#>", <#=col.IsPK?"IsPrimaryKey=true, ":""#><#=col.AutoIncrease?"AutoIncrement=true, ":""#><#=!col.IsNull?"AllowNull=false, ":""#>DbType=System.Data.DbType.<#=xtyppe#>, SqlDbType=System.Data.SqlDbType.<#=col.DataType#>)]
+	    public virtual <#=colType.Name#><#=(colType.IsValueType ? "?" : "")#> <#=col.Name#> {get; set; }
+		
+<#
+	}
+}
+#>
+	}
+	
+}

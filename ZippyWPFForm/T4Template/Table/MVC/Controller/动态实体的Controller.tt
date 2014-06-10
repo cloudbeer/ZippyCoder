@@ -1,0 +1,93 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cs" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+#>
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Web.Mvc.Ajax;
+using <#=project.Namespace#>.Models;
+
+namespace <#=project.Namespace#>.Controllers
+{
+    public class <#=table.Name#>Controller : Controller
+    {
+        private <#=project.Namespace#>Repository repository = new <#=project.Namespace#>Repository();
+        
+        //
+        // GET: /Project/
+
+        public ActionResult Index(int? page)
+        {
+            int currentPage = page ?? 0;
+            IEnumerable<<#=table.Name#>> <#=table.Name#>s = repository.Get<#=table.Name#>s(currentPage, 10);
+            return View(<#=table.Name#>s);
+        }
+
+        //
+        // GET: /Project/Details/5
+
+        public ActionResult Details(int id)
+        {
+            return View();
+        }
+
+        //
+        // GET: /Project/Create
+
+        public ActionResult Create()
+        {
+            <#=project.Namespace#>.Models.<#=table.Name#> entity = new <#=project.Namespace#>.Models.<#=table.Name#>();
+            return View(entity);
+        } 
+
+        //
+        // POST: /Project/Create
+
+        [AcceptVerbs(HttpVerbs.Post)]
+        public ActionResult Create(FormCollection collection)
+        {
+            try
+            {
+                // TODO: Add insert logic here
+
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        //
+        // GET: /Project/Edit/5
+ 
+        public ActionResult Edit(int id)
+        {
+            return View();
+        }
+
+        //
+        // POST: /Project/Edit/5
+
+        [AcceptVerbs(HttpVerbs.Post)]
+        public ActionResult Edit(int id, FormCollection collection)
+        {
+            try
+            {
+                // TODO: Add update logic here
+ 
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+    }
+}

@@ -1,0 +1,81 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".my.sql" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+foreach (Table table in project.Tables) { #>
+CREATE TABLE `<#=table.Name.ToLower()#>` (
+<# 
+	int j = 0;
+	foreach(Col col in table.Cols) { 
+	
+		if (col.Default.ToLower().Trim().IndexOf("getdate()")>=0) 
+		{
+			col.DataType = System.Data.SqlDbType.Timestamp;
+			col.Default = "";
+		}
+			
+#>
+	`<#=col.Name.Substring(0,1).ToLower() + col.Name.Substring(1,col.Name.Length-1) #>` <#=col.DataType.ToString().ToUpper()#> <#	
+        if (!string.IsNullOrEmpty(col.Length))
+        {
+            if (col.DataType != System.Data.SqlDbType.Text && col.DataType != System.Data.SqlDbType.Int && col.DataType != System.Data.SqlDbType.Date &&
+               col.DataType != System.Data.SqlDbType.DateTime && col.DataType != System.Data.SqlDbType.DateTime2)
+               Write("(" + col.Length + ") ");
+        }
+        else
+        {
+            if (col.DataType == System.Data.SqlDbType.VarChar || col.DataType == System.Data.SqlDbType.NVarChar)
+               Write("(50) ");
+        }
+        if (col.AutoIncrease)
+            Write("AUTO_INCREMENT ");
+        if (col.IsPK)
+            Write("PRIMARY KEY ");
+        else if (col.Unique)
+            Write("UNIQUE ");
+        else if (col.IsNull)
+            Write("NULL ");
+        else
+            Write("NOT NULL ");
+
+
+        if (col.Default != "")
+            Write("DEFAULT " + col.Default + " ");
+        if (j != table.Cols.Count - 1)
+            Write(",");
+        WriteLine("");
+        j++;
+	#>
+<#
+	}
+#>
+);
+<# }#>
+
+<#
+foreach (Table table in project.Tables) 
+{ 
+	foreach(Col col in table.Cols) { 
+
+        if (!string.IsNullOrEmpty(col.RefTable) && !string.IsNullOrEmpty(col.RefCol))
+        {
+			string fkName = "FK__" + table.Name + "__" + col.Name + "__" + col.RefTable + "__" + col.RefCol;
+			//WriteLine("----------外键约束--------------");
+			WriteLine(@"ALTER TABLE `" + table.Name + @"` ADD CONSTRAINT `" + fkName + "` FOREIGN KEY(`" + col.Name + "`) REFERENCES `" + col.RefTable + "` (`" + col.RefCol + "`)");
+	        
+			if (col.FkDeleteCascade)
+			{
+				WriteLine("ON DELETE CASCADE");
+			}
+			WriteLine(";");
+			if (col.FkWithNoCheck)
+			{
+				WriteLine("ALTER TABLE `" + table.Name + @"` NOCHECK CONSTRAINT `" + fkName + "`;");
+			}
+			WriteLine("");
+        }
+	}
+}
+#>

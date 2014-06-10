@@ -1,0 +1,79 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".py" #>
+#-*- coding: UTF-8 -*-
+from django.contrib import admin
+from django.db import models
+from django.utils import timezone
+import datetime
+
+
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+string allcols = "";
+string allpercent = "";
+string allpercentCol = "";
+foreach (Table table in project.Tables) { 
+	var javaClassName = ZippyCoder.Helper.ToJavaClassName(table.Name);
+	allcols = "";allpercent="";allpercentCol="";
+#>
+
+class <#=javaClassName#>(models.Model):
+<# foreach(Col col in table.Cols) { 
+	allcols += ", " + col.Name;
+	allpercent += "'%s', ";
+	allpercentCol += "self."+ col.Name +", ";
+	string xtype = "CharField";
+	string max_length = "";
+	string xdefault = "";
+	if (col.IsPK && col.AutoIncrease){
+		xtype = "AutoField"; 
+	} else if (col.DataType == System.Data.SqlDbType.Int){
+		xtype = "IntegerField";	
+		xdefault = ", default=" + (String.IsNullOrEmpty(col.Default)?"0":col.Default);
+	} else if ( col.DataType == System.Data.SqlDbType.BigInt) {
+		xtype = "BigIntegerField"; 
+		xdefault = ", default=" + (String.IsNullOrEmpty(col.Default)?"0":col.Default);
+	} else if (col.DataType == System.Data.SqlDbType.Money || col.DataType == System.Data.SqlDbType.Float || col.DataType == System.Data.SqlDbType.Float){
+		xtype = "DecimalField"; 
+		xdefault = ", default=" + (String.IsNullOrEmpty(col.Default)?"0":col.Default);
+	} else if (col.DataType == System.Data.SqlDbType.SmallDateTime || col.DataType == System.Data.SqlDbType.DateTime){
+		xtype = "DateTimeField"; 
+	} else if (col.DataType == System.Data.SqlDbType.Date){
+		xtype = "DateTimeField"; 
+	} else if (col.DataType == System.Data.SqlDbType.Time) {
+		xtype = "DateTimeField"; 
+	} else if (col.DataType == System.Data.SqlDbType.Text || col.DataType == System.Data.SqlDbType.NText || col.DataType == System.Data.SqlDbType.VarChar || col.DataType == System.Data.SqlDbType.NVarChar){
+		xtype = "CharField"; 
+		xdefault = ", default=u'" + (String.IsNullOrEmpty(col.Default)?"":col.Default) + "'";
+		max_length= ", max_length=" + col.Length;
+	}
+#>
+    <#=col.Name#> = models.<#=xtype#>(u'<#=col.Title#>'<#=max_length#><#=xdefault#>)
+<# } 
+	allpercent = allpercent.Substring(0, allpercent.Length-2);
+	allpercentCol = allpercentCol.Substring(0, allpercentCol.Length-2);
+#>
+
+    def __init__(self<#=allcols#>):
+<# foreach(Col col in table.Cols) { #>
+        self.<#=col.Name#> = <#=col.Name#>
+<#}#>
+
+    class Meta:
+		db_table = '<#=table.Name#>'
+        verbose_name = u'<#=table.Title#>'
+        verbose_name_plural = u'<#=table.Title#>'
+        ordering = ('id',)
+
+    def __unicode__(self):
+        return self.id
+
+    def __repr__(self):
+	    return "<<#=javaClassName#>(<#=allpercent#>)>" % (<#=allpercentCol#>)
+
+
+
+
+<# }#>

@@ -1,0 +1,14 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".resx.txt" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+foreach (Table table in project.Tables) {
+	WriteLine(table.Name + "`" + table.Title);	
+	foreach (Col col in table.Cols) 
+	{
+		WriteLine(col.Name + "`" + col.Title);	
+	}
+}
+#>

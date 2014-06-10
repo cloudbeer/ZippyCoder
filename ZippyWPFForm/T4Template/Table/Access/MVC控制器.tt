@@ -1,0 +1,175 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cs" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+#>
+using Microsoft.Practices.EnterpriseLibrary.Validation;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Web.Mvc.Ajax;
+using <#=project.Namespace#>.BLL;
+using Zippy.Data.Collections;
+
+namespace <#=project.Namespace#>.Controllers
+{
+
+    public class <#=table.Name#>Controller : BaseController
+    {
+        private <#=table.Name#> repository = null;
+<#
+System.Text.StringBuilder sbQueryParams = new System.Text.StringBuilder();
+System.Text.StringBuilder sbQueryHash = new System.Text.StringBuilder();
+System.Text.StringBuilder sbRequestFormCheckBoxList = new System.Text.StringBuilder();
+
+foreach (Col col in table.Cols) 
+{	
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	
+	if ((col.UIColType & UIColTypes.Queryable) == UIColTypes.Queryable) 
+	{
+		if (colType == typeof(string)) 
+		{
+			sbQueryParams.Append("string q" + col.Name + ", ");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "\", q" + col.Name + ");");
+		}
+		else if (col.RenderType == RenderTypes.RadioButtonList || col.RenderType == RenderTypes.DropDownList || col.RenderType == RenderTypes.CheckBoxList)
+		{
+			sbQueryParams.Append(colType.Name + "? q" + col.Name + ", ");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "\", q" + col.Name + ");");
+		}
+		else if (colType.IsValueType)
+		{
+			sbQueryParams.Append(colType.Name + "? q" + col.Name + "Start, ");
+			sbQueryParams.Append(colType.Name + "? q" + col.Name + "End, ");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "Start\", q" + col.Name + "Start);");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "End\", q" + col.Name + "End);");
+		}
+	}
+	
+	if (col.RenderType == RenderTypes.CheckBoxList)
+	{
+		sbRequestFormCheckBoxList.AppendLine("                string form" + col.Name + " = Request.Form[\"" + col.Name + "\"];");
+		sbRequestFormCheckBoxList.AppendLine("                entity." + col.Name + " = Zippy.Helper.ZData.EnumStringToInt32(form" + col.Name + ");");
+	}
+}
+#>
+
+
+        protected void ValidateEntity(<#=table.Name#> entity)
+        {
+            ValidationResults errors = Validation.Validate<<#=table.Name#>>(entity);
+
+            if (!errors.IsValid)
+            {
+                foreach (var error in errors)
+                {
+                    ModelState.AddModelError(error.Key + error.Tag, error.Message);
+                }
+            }
+        }
+		
+		#region 查询
+        public ActionResult Index(int? PageIndex, int? PageSize, <#=sbQueryParams.ToString()#> int? orderCol)
+        {
+            int currentPageSize = PageSize ?? 20;
+            int currentPageIndex = PageIndex ?? 1;	
+			
+            Hashtable hs = new Hashtable();
+<#=sbQueryHash.ToString()#>
+            repository = new <#=table.Name#>();
+            PaginatedList<<#=table.Name#>> result = repository.Query(currentPageSize, currentPageIndex, hs, orderCol);
+            result.QueryParameters = hs;
+            return View(result);
+        }
+		#endregion
+
+        public ActionResult Details(int id)
+        {
+            repository = <#=table.Name#>.Create(id);
+            return View(repository);
+        }
+
+
+        public ActionResult Create()
+        {
+            repository = new <#=table.Name#>();
+            return View(repository);
+        } 
+
+
+
+        [AcceptVerbs(HttpVerbs.Post)]
+        [ValidateInput(false)]
+        public ActionResult Create(<#=table.Name#> entity)
+        {
+<#=sbRequestFormCheckBoxList.ToString()#>
+            ValidateEntity(entity);
+            if (!ModelState.IsValid)
+                return View(entity);
+				
+            try
+            {
+				entity.Save();
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        public ActionResult Delete(int id)
+        {
+            repository = new <#=table.Name#>();
+            repository.<#=colPK.Name#> = id;
+            if (repository.Delete()>0)
+				return this.Content("1");
+			else
+				return this.Content("0");
+        }
+ 
+        public ActionResult Edit(int id)
+        {
+            repository = <#=table.Name#>.Create(id);
+            return View(repository);
+        }
+
+
+
+        [AcceptVerbs(HttpVerbs.Post)]
+        [ValidateInput(false)]
+        public ActionResult Edit(int id, <#=table.Name#> entity)
+        {
+				entity.<#=colPK.Name#> = id;
+<#=sbRequestFormCheckBoxList.ToString()#>
+
+            ValidateEntity(entity);
+            if (!ModelState.IsValid)
+                return View(entity);
+				
+            try
+            {
+				entity.Save();
+				
+                string returnUrl =  Request["returnUrl"];
+                if (!string.IsNullOrEmpty(returnUrl))
+                    return Redirect(returnUrl);
+                else
+                    return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+    }
+}

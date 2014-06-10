@@ -1,0 +1,28 @@
+﻿<Page x:Class="ZippyWPFForm.PPTable"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" IsVisibleChanged="Page_IsVisibleChanged"
+    Title="PPTable">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="100"/>
+            <RowDefinition Height="35"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+
+        <Label Grid.Row="0" Name="xTitle" HorizontalAlignment="Left" Padding="10 10 10 20" Grid.ColumnSpan="2" FontWeight="Bold" FontSize="20" FontFamily="微软雅黑">表/实体属性</Label>
+        <Label Height="28" Width="80" Grid.Row="1" HorizontalAlignment="Right">表 名：</Label>
+        <Label Height="28" Width="80" Grid.Row="2" HorizontalAlignment="Right">标 题：</Label>
+        <Label Height="28" Width="80" Grid.Row="3" HorizontalAlignment="Right">说 明：</Label>
+        <TextBox Height="24" Name="tbxName" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0 0 10 0"/>
+        <TextBox Height="24" Name="tbxTitle" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0 0 10 0" />
+        <TextBox Height="100" Name="tbxRemark"  Grid.Row="3" Grid.Column="1" AcceptsReturn="True" AcceptsTab="True" AutoWordSelection="True" Margin="0 0 10 0" HorizontalContentAlignment="Stretch" />
+        <Button Name="btnSave" Height="30" Width="100" Grid.Column="1" Grid.Row="4" HorizontalAlignment="Left" Click="btnSave_Click" Margin="0 2 10 0">保存</Button>
+        <Button Name="btnCancel" Height="30" Width="100" Grid.Column="1" Grid.Row="12" HorizontalAlignment="Left" Click="btnCancel_Click" Margin="103 2 10 0">取消</Button>
+    </Grid>
+</Page>

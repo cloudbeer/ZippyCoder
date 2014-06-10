@@ -1,0 +1,323 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cs" #>
+<#
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+Type colPKType = ZippyCoder.TypeConverter.ToNetType(colPK.DataType);
+List<ForeignKeyMap> ForeignKeyMaps = project.GetForeignKeyMaps(table);
+
+#>
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.Text;
+using Zippy.Data.Collections;
+
+namespace <#=project.Namespace#>.BLL
+{
+
+    public partial class <#=table.Name#> : <#=project.Namespace#>.Entity.<#=table.Name#>
+    {	
+		#region 构造器
+        public Zippy.Data.IDalProvider db;
+		
+        public <#=table.Name#>()
+        {
+            db = Zippy.Data.DalFactory.CreateProvider();
+        }
+		
+        public <#=table.Name#>(Zippy.Data.IDalProvider _db)
+        {
+            db = _db;
+        }
+		
+        public static <#=table.Name#> Create(<#=colPKType.Name#> _<#=colPK.Name#>)
+        {
+            Zippy.Data.IDalProvider _db = Zippy.Data.DalFactory.CreateProvider();
+			<#=table.Name#> rtn =  _db.FindUnique<<#=table.Name#>>(_<#=colPK.Name#>);
+			rtn.db = _db;
+            return rtn;
+        }
+		
+        public static <#=table.Name#> Create(<#=colPKType.Name#> _<#=colPK.Name#>, Zippy.Data.IDalProvider _db)
+        {
+			<#=table.Name#> rtn =  _db.FindUnique<<#=table.Name#>>(_<#=colPK.Name#>);
+            rtn.db = _db;
+            return rtn;
+        }
+		#endregion
+		
+		#region 本实体的外键实体集合
+<# foreach (ForeignKeyMap wmap in ForeignKeyMaps)  //增加外键子元素的集合
+{#>
+        private List<<#=wmap.Table.Name#>> _<#=wmap.Table.Name#>s;
+        /// <summary>
+        /// 表示 [<#=table.Title#> 的 <#=wmap.Col.Title#>] 的 [<#=wmap.Table.Title#>] 集合
+        /// </summary>
+        public virtual List<<#=wmap.Table.Name#>> <#=wmap.Table.Name#>s
+        {
+            get
+            {
+                if (_<#=wmap.Table.Name#>s == null)
+                {
+                    if (this.<#=wmap.Col.Name#> == null)
+                        _<#=wmap.Table.Name#>s = new List<<#=wmap.Table.Name#>>();
+                    else
+                        _<#=wmap.Table.Name#>s = db.Take<<#=wmap.Table.Name#>>("<#=wmap.Col.Name#>=@<#=wmap.Col.Name#>", Zippy.Helper.ZData.CreateParameter("<#=wmap.Col.Name#>", this.<#=wmap.Col.RefCol#>));
+                }
+                return _<#=wmap.Table.Name#>s;
+            }
+        }
+<#}#>
+		#endregion
+		
+		#region 本实体外键对应的实体
+<#
+foreach (Col col in table.Cols){
+    if (!string.IsNullOrEmpty(col.RefTable))
+{#>
+        private <#=col.RefTable#> _<#=col.Name#>Entity;
+        /// <summary>
+        /// 表示 [<#=col.Title#>] 对应的实体
+        /// </summary>
+        public virtual <#=col.RefTable#> <#=col.Name#>Entity
+		{
+            get
+			{
+                if (_<#=col.Name#>Entity == null)
+                    _<#=col.Name#>Entity = db.FindUnique<<#=col.RefTable#>>("<#=col.RefCol#>=@<#=col.RefCol#>", Zippy.Helper.ZData.CreateParameter("<#=col.RefCol#>", this.<#=col.Name#>));
+                return _<#=col.Name#>Entity;
+            }
+        }
+        private List<<#=col.RefTable#>> _<#=col.Name#>Entities;
+        /// <summary>
+        /// 表示可以被 [<#=col.Title#>] 使用的所有实体集合
+        /// </summary>
+        public List<<#=col.RefTable#>> <#=col.Name#>Entities
+        {
+            get
+            {
+                if (_<#=col.Name#>Entities == null)
+                    _<#=col.Name#>Entities = db.Take<<#=col.RefTable#>>();
+                return _<#=col.Name#>Entities;
+            }
+        }
+
+<#
+	}
+}#>
+		#endregion
+
+        public virtual int Delete()
+        {
+            return db.Delete<<#=table.Name#>>(this.<#=colPK.Name#>);
+        }
+		
+        public virtual int Insert()
+        {
+            return db.Insert<<#=table.Name#>>(this);           
+        }
+		
+        public virtual int Update()
+        {
+            return db.Update<<#=table.Name#>>(this);
+        }
+		
+        public virtual bool Save()
+        {
+            int rtn = 0;
+            if (this.<#=colPK.Name#> != null)
+                rtn = db.Update<<#=table.Name#>>(this);
+            else
+            {
+                rtn = db.Insert<<#=table.Name#>>(this);               
+            }
+            return rtn > 0;
+        }
+		
+        public virtual List<<#=table.Name#>> Take()
+        {
+            return db.Take<<#=table.Name#>>(true);
+        }
+		
+        public virtual List<<#=table.Name#>> Take(int count)
+        {
+            return db.Take<<#=table.Name#>>(count, true);
+        }
+		
+        public virtual List<<#=table.Name#>> Take(string sqlEntry, params System.Data.Common.DbParameter[] cmdParameters)
+        {
+            return db.Take<<#=table.Name#>>(sqlEntry, cmdParameters);
+        }
+		
+        /// <summary>
+        /// <#=table.Title#> 执行查询
+        /// </summary>
+        /// <param name="where">查询条件</param>
+        /// <param name="orderby">排序方式</param>
+        /// <param name="PageSize">每页数量</param>
+        /// <param name="PageIndex">页码</param>
+        /// <param name="cmdParameters">查询条件赋值</param>
+        /// <returns></returns>
+        public virtual PaginatedList<<#=table.Name#>> Take(string @where, string orderby, int PageSize, int PageIndex, params System.Data.Common.DbParameter[] cmdParameters)
+        {
+            int TotalCount = 0;
+            int pageCount = 0;
+            PaginatedList<<#=table.Name#>> rtn = new PaginatedList<<#=table.Name#>>();
+            List<<#=table.Name#>> records = db.Take<<#=table.Name#>>(where , orderby, PageSize, PageIndex,out TotalCount , out pageCount, cmdParameters);
+            rtn.AddRange(records);
+            rtn.PageIndex = PageIndex;
+            rtn.PageSize = PageSize;
+            rtn.TotalCount = TotalCount;
+            return rtn;
+        }
+		
+        public virtual PaginatedList<<#=table.Name#>> Query(int PageSize, int PageIndex, Hashtable paras, int? orderCol)
+        {
+            PaginatedList<<#=table.Name#>> rtn = new PaginatedList<<#=table.Name#>>();
+            List<System.Data.Common.DbParameter> dbParams = new List<System.Data.Common.DbParameter>();
+            string where = "1=1";
+			
+			#region 开始查询
+            if (paras != null)
+            {
+<#
+for (int i=0;i<table.Cols.Count;i++){
+	Col col = table.Cols[i];
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Queryable) == UIColTypes.Queryable) {
+		if (colType == typeof(string)) {
+#>
+				object q<#=col.Name#> = paras["q<#=col.Name#>"];
+				if (q<#=col.Name#> != null)
+				{
+					where += " and <#=col.Name#> like @<#=col.Name#>";
+					dbParams.Add(Zippy.Helper.ZData.CreateParameter("<#=col.Name#>", "%" + q<#=col.Name#> + "%"));
+				}
+<#
+		}
+		else if (col.RenderType == RenderTypes.RadioButtonList || col.RenderType == RenderTypes.DropDownList)
+		{
+#>
+				object q<#=col.Name#> = paras["q<#=col.Name#>"];
+				if (q<#=col.Name#> != null && q<#=col.Name#>.ToString()!="" )
+				{
+					<#=colType.Name#> intq<#=col.Name#> = (<#=colType.Name#>)q<#=col.Name#>;
+					if (intq<#=col.Name#> > 0)
+					{
+						where += " and <#=col.Name#> = @<#=col.Name#>";
+						dbParams.Add(Zippy.Helper.ZData.CreateParameter("<#=col.Name#>", q<#=col.Name#>));
+					}
+				}
+<#
+		}
+		else if (col.RenderType == RenderTypes.CheckBoxList)
+		{
+#>
+				object q<#=col.Name#> = paras["q<#=col.Name#>"];
+				if (q<#=col.Name#> != null && q<#=col.Name#>.ToString()!="")
+				{
+					<#=colType.Name#> intq<#=col.Name#> = (<#=colType.Name#>)q<#=col.Name#>;
+					if (intq<#=col.Name#> > 0)
+					{
+						where += " and (<#=col.Name#> & @<#=col.Name#> = @<#=col.Name#>)";
+						dbParams.Add(Zippy.Helper.ZData.CreateParameter("<#=col.Name#>", q<#=col.Name#>));
+					}
+				}
+<#
+		}
+		else if (colType == typeof(DateTime))  //精确到 日的查询
+		{
+#>
+				object q<#=col.Name#>Start = paras["q<#=col.Name#>Start"];
+				if (q<#=col.Name#>Start != null && q<#=col.Name#>Start.ToString()!="")
+				{
+					where += " and <#=col.Name#> >= @<#=col.Name#>Start";
+					dbParams.Add(Zippy.Helper.ZData.CreateParameter("<#=col.Name#>Start", q<#=col.Name#>Start));
+				}
+				object q<#=col.Name#>End = paras["q<#=col.Name#>End"];
+				if (q<#=col.Name#>End != null && q<#=col.Name#>End.ToString()!="")
+				{
+					where += " and <#=col.Name#> < @<#=col.Name#>";
+					dbParams.Add(Zippy.Helper.ZData.CreateParameter("<#=col.Name#>End", ((DateTime)q<#=col.Name#>End).AddDays(1)));
+				}
+<#
+		}
+		else if (colType.IsValueType)
+		{
+#>
+				object q<#=col.Name#>Start = paras["q<#=col.Name#>Start"];
+				if (q<#=col.Name#>Start != null && q<#=col.Name#>Start.ToString()!="")
+				{
+					where += " and <#=col.Name#> >= @<#=col.Name#>Start";
+					dbParams.Add(Zippy.Helper.ZData.CreateParameter("<#=col.Name#>Start", q<#=col.Name#>Start));
+				}
+				object q<#=col.Name#>End = paras["q<#=col.Name#>End"];
+				if (q<#=col.Name#>End != null && q<#=col.Name#>End.ToString()!="")
+				{
+					where += " and <#=col.Name#> <= @<#=col.Name#>";
+					dbParams.Add(Zippy.Helper.ZData.CreateParameter("<#=col.Name#>End", q<#=col.Name#>End));
+				}
+<#
+		}
+	}
+}
+#>
+			}
+            #endregion
+			
+			string orderBy = "<#=colPK.Name#> desc";
+            if (orderCol == 0)
+            {
+                orderBy =  "<#=colPK.Name#> desc";
+            }
+<#
+int sortIndex=1;
+foreach (Col col in table.Cols){
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Sortable) == UIColTypes.Sortable) {	
+#>
+            else if (orderCol == <#=sortIndex#>)
+            {
+                orderBy = "<#=col.Name#>";
+            }
+            else if (orderCol == <#=sortIndex + 1#>)
+            {
+                orderBy = "<#=col.Name#> desc";
+            }
+<#
+		sortIndex = sortIndex + 2;
+	}
+}
+#>
+            int TotalCount = 0;
+            int pageCount = 0;
+            List<<#=table.Name#>> records = db.Take<<#=table.Name#>>(where,orderBy, PageSize, PageIndex,out TotalCount,out pageCount, dbParams.ToArray());
+            rtn.AddRange(records);
+            rtn.PageIndex = PageIndex;
+            rtn.PageSize = PageSize;
+            rtn.TotalCount = TotalCount;
+
+            return rtn;
+
+        }
+    }
+	
+<# foreach (Col col in table.Cols) {
+	if (!string.IsNullOrEmpty(col.EnumType))
+	{#>	
+	public enum <#=col.EnumType #>
+	{
+		Default = 1
+	}
+<#
+	}
+}
+#>
+}

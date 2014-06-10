@@ -1,0 +1,118 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".aspx" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+Type pkType = ZippyCoder.TypeConverter.ToNetType(colPK.DataType);
+
+#>
+<%@ Page Language="C#" MasterPageFile="~/Views/Shared/Site.Master" Inherits="System.Web.Mvc.ViewPage<<#=project.Namespace#>.Entity.<#=table.Name#>>" %>
+<%@ Import Namespace="<#=project.Namespace#>.Entity" %>
+<%@ Import Namespace="<#=project.Namespace#>.Entity.Helper" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server"> 
+	编辑 <#=table.Title#>   
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
+    <script type="text/javascript">
+        $(function () {
+            $("form").submit(function () {
+			<#
+foreach (Col col in table.Cols)
+{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable) 
+	{
+#>
+		<#if (!col.IsNull){#>
+			if ($("#<#=col.Name#>").val() == "") { $(document).jvalidate('<#=col.Name#>', '必须输入<#=col.Title#>', 59); return false }
+		<#}#>
+		<#if (colType==typeof(string)){#>
+			if ($("#<#=col.Name#>").val().length > <#=col.Length#>) { $(document).jvalidate('<#=col.Name#>', '您输入的内容太多。', 59); return false }
+		<#}#>
+		<#if (colType==typeof(int) || colType==typeof(float) ||colType==typeof(decimal) ){#>
+			if (isNaN( $("#<#=col.Name#>").val())) { $(document).jvalidate('<#=col.Name#>', '请输入数字。', 59); return false }
+		<#}#>
+<# }
+}#>
+            });
+
+            $(".detail.readonly input").attr("readonly", true);
+        });
+    </script>
+    <div id="contents">
+        <div id="top">
+            <div class="con clearfix">
+                <div class="fl">
+                    <a href="javascript:;" class="btn img" onclick="history.back()"><i class="icon i_back">
+                    </i>返回<b></b></a>
+                </div>
+            </div>
+        </div>
+        <div id="main">
+            <% using (Html.BeginForm())
+               {%>
+            <table cellspacing="0" cellpadding="0" border="0" class="detail <% if (ViewData["IsDetail"]!=null){ Response.Write("readonly");}%>">
+                <caption>
+                    <h3 id="title">
+                        <%=ViewData["VTitle"]%></h3>
+                </caption>
+<#
+foreach (Col col in table.Cols)
+{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable) 
+	{
+#>
+                <tr>
+                    <td class="tt">
+                        <#=col.Title#>：
+                    </td>
+                    <td class="tc" colspan="3">
+					<#if (col.RenderType == RenderTypes.TextBox) {#>
+                        <%= Html.TextBox("<#=col.Name#>", Model.<#=col.Name#>, new { @class = "text w300" })%>
+					<#}else if (col.RenderType == RenderTypes.TextArea) {#>
+						<%= Html.TextArea("<#=col.Name#>", Model.<#=col.Name#>, new { @class = "textarea w500", rows="10" })%>
+					<#} else if (col.RenderType == RenderTypes.Html) { #>
+						<%= Html.TextArea("<#=col.Name#>", Model.<#=col.Name#>)%>
+						<script type="text/javascript">
+							$(function(){
+								$("#<#=col.Name#>").ckeditor();
+							});
+						</script>
+					<#}#>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+<#
+	}
+}
+#>
+                <% if (ViewData["IsDetail"] == null)
+                   { %>
+                <tr class="action">
+                    <td>
+                    </td>
+                    <td class="tc">
+                        <input type="submit" value="保存" class="gbutton mr20" />
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+                <%} %>
+            </table>
+            <%} %>
+        </div>
+    </div>
+        
+</asp:Content>

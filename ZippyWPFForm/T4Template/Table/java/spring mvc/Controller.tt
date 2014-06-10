@@ -1,0 +1,64 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".java" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+var javaClassName = ZippyCoder.Helper.ToJavaClassName(table.Name);
+var varName =  ZippyCoder.Helper.ToJavaPropertyName(table.Name);
+
+#>
+package <#=project.Namespace#>.controller;
+
+import <#=project.Namespace#>.model.<#=javaClassName#>;
+import <#=project.Namespace#>.service.<#=javaClassName#>Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/<#=varName#>")
+public class <#=javaClassName#>Controller
+{
+    @Autowired
+    <#=javaClassName#>Service <#=varName#>Service;
+
+    @RequestMapping("edit")
+    public String edit(Integer id, ModelMap model) {
+        if (id!=null){
+            <#=javaClassName#> <#=varName#> = <#=varName#>Service.find<#=javaClassName#>(id);
+            model.addAttribute("<#=varName#>", <#=varName#>);
+        }
+        return "<#=varName#>/edit";
+    }
+
+    @RequestMapping("list")
+    public String list(ModelMap model) {
+        model.addAttribute("list", <#=varName#>Service.list<#=javaClassName#>());
+        return "<#=varName#>/list";
+    }
+
+    @RequestMapping(value = "save", method = RequestMethod.POST)
+    @ResponseBody
+    public String save(@ModelAttribute("<#=varName#>") <#=javaClassName#> <#=varName#>, BindingResult result) {
+        <#=varName#>Service.add<#=javaClassName#>(<#=varName#>);
+        return "<#=varName#>/list";
+    }
+
+    @RequestMapping(value = "del", method = RequestMethod.POST)
+    @ResponseBody
+    public String del(int id) {
+        try {
+            <#=varName#>Service.remove<#=javaClassName#>(id);
+            return "1";
+        } catch (Exception ex) {
+            return "0";
+        }
+    }
+
+}

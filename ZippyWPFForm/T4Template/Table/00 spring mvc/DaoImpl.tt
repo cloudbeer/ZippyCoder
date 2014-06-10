@@ -1,0 +1,49 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".java" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+var javaClassName = ZippyCoder.Helper.ToJavaClassName(table.Name);
+var varName =  ZippyCoder.Helper.ToJavaPropertyName(table.Name);
+
+#>
+package <#=project.Namespace#>.dao;
+
+import <#=project.Namespace#>.model.<#=javaClassName#>;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+
+
+@Transactional
+@Repository
+public class <#=javaClassName#>DaoImpl implements <#=javaClassName#>Dao
+{
+    @Autowired
+    private SessionFactory sessionFactory;
+
+    public void add<#=javaClassName#>(<#=javaClassName#> <#=varName#>) {
+        sessionFactory.getCurrentSession().save(<#=varName#>);
+    }
+
+    public List<<#=javaClassName#>> list<#=javaClassName#>() {
+        return sessionFactory.getCurrentSession().createQuery("from <#=javaClassName#>")
+                .list();
+    }
+
+    public void remove<#=javaClassName#>(int id) {
+        <#=javaClassName#> <#=varName#> = (<#=javaClassName#>) sessionFactory.getCurrentSession().load(
+                <#=javaClassName#>.class, id);
+        if (null != <#=varName#>) {
+            sessionFactory.getCurrentSession().delete(<#=varName#>);
+        }
+    }
+
+    public <#=javaClassName#> find<#=javaClassName#>(int id) {
+        return (<#=javaClassName#>) sessionFactory.getCurrentSession().get(<#=javaClassName#>.class, id);
+    }
+
+}

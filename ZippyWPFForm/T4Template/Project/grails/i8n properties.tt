@@ -1,0 +1,16 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".messages.properties.text" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+foreach (Table table in project.Tables) { #>
+
+<#=table.Name#>.label=<#=table.Title#>
+<# 
+	foreach(Col col in table.Cols) { 
+#>
+<#=table.Name#>.<#=col.Name#>.label=<#=col.Title#>
+<#
+	}
+}#>

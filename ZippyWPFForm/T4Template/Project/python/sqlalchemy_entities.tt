@@ -1,0 +1,54 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".py" #>
+# coding: utf-8
+
+from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Numeric
+
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+string allcols = "";
+string allpercent = "";
+string allpercentCol = "";
+foreach (Table table in project.Tables) { #>
+
+class <#=table.Name#>(Base):
+    __tablename__ = '<#=table.Name#>'
+
+<# foreach(Col col in table.Cols) { 
+	allcols += ", " + col.Name;
+	allpercent += "'%s', ";
+	allpercentCol += "self."+ col.Name +", ";
+	string xtype = "String";
+	if (col.DataType == System.Data.SqlDbType.Int || col.DataType == System.Data.SqlDbType.BigInt)
+		xtype = "Integer";
+	else if (col.DataType == System.Data.SqlDbType.Money || col.DataType == System.Data.SqlDbType.Float || col.DataType == System.Data.SqlDbType.Float)
+		xtype = "Numeric";
+	else if (col.DataType == System.Data.SqlDbType.SmallDateTime || col.DataType == System.Data.SqlDbType.DateTime)
+		xtype = "DateTime";
+	else if (col.DataType == System.Data.SqlDbType.Date)
+		xtype = "Date";
+	else if (col.DataType == System.Data.SqlDbType.Time)
+		xtype = "Time";
+	else if (col.DataType == System.Data.SqlDbType.Text || col.DataType == System.Data.SqlDbType.NText)
+		xtype = "Text";
+#>
+    <#=col.Name#> = Column(<#=xtype#>, primary_key=<#=col.IsPK#>, nullable=<#=col.IsNull#>)
+<# } 
+	allpercent = allpercent.Substring(0, allpercent.Length-2);
+	allpercentCol = allpercentCol.Substring(0, allpercentCol.Length-2);
+#>
+
+    def __init__(self<#=allcols#>):
+<# foreach(Col col in table.Cols) { #>
+        self.<#=col.Name#> = <#=col.Name#>
+<#}#>
+
+    def def __repr__(self):
+	    return "<<#=table.Name#>(<#=allpercent#>)>" % (<#=allpercentCol#>)
+
+
+
+
+<# }#>

@@ -1,0 +1,220 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".aspx" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+#>
+<%@ Page Language="C#" MasterPageFile="~/Views/Shared/Site.Master" 
+Inherits="System.Web.Mvc.ViewPage<Zippy.Data.Collections.PaginatedList<<#=project.Namespace#>.Entity.<#=table.Name#>>>" %>
+<%@ Import Namespace="<#=project.Namespace#>.Entity" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">    
+	<%=R.V("<#=table.Name#>")%>
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
+    <zxp:XPanel runat="server" ID='panel' Title="<%$R:<#=table.Name#>%>">
+        <zxp:XQueryBox runat="server" ID='queryBox'>
+            <table class='queryTable'>
+
+<#
+int queryIndex = 0;
+bool includeDatePickJs = false;
+//bool includeFckJs = false;
+
+System.Text.StringBuilder sbStartJs = new System.Text.StringBuilder();
+System.Text.StringBuilder sbStartJsQuery = new System.Text.StringBuilder();
+
+foreach (Col col in table.Cols)
+{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Queryable) == UIColTypes.Queryable) 
+	{
+#>
+<#=(queryIndex==0)?"                <tr>":""#><#=(queryIndex>0 && queryIndex%2==0 )?"                </tr>":""#><#=(queryIndex>0 && queryIndex%2==0 )?"                <tr>":""#>
+                    <td class='label'>
+                        <%=R.V("<#=table.Name#>_<#=col.Name#>")%>:
+                    </td>
+<#
+		if (colType == typeof(string)) {
+			sbStartJsQuery.AppendLine("+ \"&q" + col.Name + "=\" + encodeURIComponent($(\"#q" + col.Name + "\").val())");
+#>
+                    <td class='value'>
+                        <input type="text" id="q<#=col.Name#>" class="textBox w6" />
+                    </td>
+<#
+		}
+		else if (col.RenderType == RenderTypes.RadioButtonList || col.RenderType == RenderTypes.DropDownList || col.RenderType == RenderTypes.CheckBoxList)
+		{
+			sbStartJsQuery.AppendLine("+ \"&q" + col.Name + "=\" + encodeURIComponent($(\"#q" + col.Name + " option:selected\").val())");
+#>
+                    <td class="value">
+<# if (!string.IsNullOrEmpty(col.RefCol)) { #>
+						<%= Html.DropDownList("q<#=col.Name#>", new SelectList(Model.<#=col.Name#>Entities, "<#=col.RefCol#>", "<#=col.RefColTextField#>"), new {@class="textBox w6"})%>
+<# } else if (!string.IsNullOrEmpty(col.EnumType)) { #>
+						<%= Html.DropDownList("q<#=col.Name#>", new SelectList(Zippy.Helper.ZData.EnumToIEnumerable(typeof(<#=col.EnumType#>), typeof(<#=col.ResourceType#>), R.V("Please choose")), "Value", "Text"), new {@class="textBox w6"})%>
+<#}#>
+                    </td>
+<#
+		}
+		else if (colType == typeof(DateTime))  //精确到 日的查询
+		{
+			includeDatePickJs = true;
+			sbStartJs.AppendLine("        $(\"#q" + col.Name + "Start\").datepicker();");
+			sbStartJs.AppendLine("        $(\"#q" + col.Name + "End\").datepicker();");
+			sbStartJsQuery.AppendLine(" + \"&q" + col.Name + "Start=\" + encodeURIComponent($(\"#q" + col.Name + "Start\").val())");
+			sbStartJsQuery.AppendLine(" + \"&q" + col.Name + "End=\" + encodeURIComponent($(\"#q" + col.Name + "End\").val())");
+#>
+                    <td class='value'>
+                        <input type="text" id="q<#=col.Name#>Start" class="textBox w6" /> -						
+                        <input type="text" id="q<#=col.Name#>End" class="textBox w6" />
+                    </td>
+<#
+		}
+		else if (colType.IsValueType)
+		{
+			sbStartJsQuery.AppendLine("+ \"&q" + col.Name + "Start=\" + encodeURIComponent($(\"#q" + col.Name + "Start\").val())");
+			sbStartJsQuery.AppendLine("+ \"&q" + col.Name + "End=\" + encodeURIComponent($(\"#q" + col.Name + "End\").val())");
+#>
+                    <td class='value'>
+                        <input type="text" id="q<#=col.Name#>Start" class="textBox w6" /> -						
+                        <input type="text" id="q<#=col.Name#>End" class="textBox w6" />
+                    </td>
+<#
+		}
+		queryIndex++;
+	}
+}
+#>
+					<#=(queryIndex>0 && queryIndex%2!=0)?"<td>":""#>
+					<#=(queryIndex>0 && queryIndex%2!=0)?"</td>":""#>
+					<#=(queryIndex>0 && queryIndex%2!=0)?"<td>":""#>
+                	<#=(queryIndex>0 && queryIndex%2!=0)?"</td>":""#>
+				</tr>
+        	</table>
+            <zxp:XActionBox ID="qactionBox" runat="server">
+                <input type="button" id="btnQuery" value="<%=R.V("Query")%>" class="button btnQuery" />
+            </zxp:XActionBox>
+        </zxp:XQueryBox>
+        <zxp:XListBox runat="server" ID="listBox">
+            <table class="table">
+                <tr class="header">
+<#
+				foreach (Col col in table.Cols){
+					if ((col.UIColType & ZippyCoder.Entity.UIColTypes.Listable)== ZippyCoder.Entity.UIColTypes.Listable){#>
+                    <th>
+                        <%=R.V("<#=table.Name#>_<#=col.Name#>")%>
+                    </th>		
+<#
+					}
+				}#>
+					<th>
+						<%=R.V("Manage") %>
+					</th>
+                </tr>
+				<%
+                    int rowNum = 0;
+                    foreach (var item in Model)
+                    { %>
+                <tr class='<%=(rowNum%2==0)?"odd":"even" %>'>
+<#
+				foreach (Col col in table.Cols){
+					System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+					Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+					if ((col.UIColType & ZippyCoder.Entity.UIColTypes.Listable)== ZippyCoder.Entity.UIColTypes.Listable){
+					#>
+                    <td>
+<#
+if (colType == typeof(DateTime)){
+#>
+						<%= item.<#=col.Name#>.HasValue?item.<#=col.Name#>.Value.ToString("yyyy-MM-dd"):"" %>
+<#
+} else if (!string.IsNullOrEmpty(col.EnumType)){
+#>
+						<%= Zippy.Helper.ZData.EnumToString(item.<#=col.Name#>.HasValue?item.<#=col.Name#>.Value:0, typeof(<#=col.EnumType#>), typeof(<#=col.ResourceType#>)) %>
+<#
+} else if (!string.IsNullOrEmpty(col.RefTable)){
+#>
+                        <%
+                            var _<#=col.Name#>Entity = item.<#=col.Name#>Entity;
+                            if (_<#=col.Name#>Entity != null) Response.Write(item.<#=col.Name#>Entity.<#=col.RefColTextField#>);
+                        %>
+<#
+} else {
+#>
+						<%= Html.Encode(item.<#=col.Name#>) %>
+<#}#>
+                    </td>
+<#
+					}
+				}#>
+					<td>
+						<a href='javascript:;' onclick='edit("<%=item.<#=colPK.Name#>%>")'><%=R.V("Modify")%></a>
+						<a href='javascript:;' onclick='del("<%=item.<#=colPK.Name#>%>", this)'><%=R.V("Delete")%></a>			
+					</td>
+				</tr>
+				
+				<% 
+                    rowNum++;
+                } %>
+            </table>
+        </zxp:XListBox>
+        <%=Model.ToPagerHtml()%>
+    </zxp:XPanel>
+<#
+				if (includeDatePickJs) 
+				{
+#>
+    <link href='/Scripts/jqueryui/ui.datepicker.css' type='text/css' rel='stylesheet' />
+
+    <script src='/Scripts/jqueryui/ui.datepicker.js' type='text/javascript'></script>
+
+    <script src='/Scripts/jqueryui/ui.datepicker-zh_CN.js' type='text/javascript'></script>
+<#
+				}
+#>
+    <script type="text/javascript">
+    $(function(){
+<#=sbStartJs.ToString()#>
+
+        $("#btnQuery").click(function() {
+            window.location = "<%=Request.Url.LocalPath %>?PageSize=<%=Model.PageSize %>"<#=sbStartJsQuery.ToString()#>;
+        });
+    });
+
+    function del(id, sender){
+        if (!confirm('<%=R.V("Confirm delete") %>')) return;
+        url = '/<#=table.Name#>/Delete/' + id;
+        $.post(url, null, function(res){
+            if (res=='1'){
+                $(sender).parent().parent().remove();
+            }else{
+                alert('<%=R.V("Error operation") %>');
+            }
+            
+        });
+    }
+    function edit(id){
+		window.location = '/<#=table.Name#>/Edit/' + id + "?returnUrl=<%=HttpUtility.UrlEncode(Request.RawUrl.ToString())%>";
+    }
+    </script>
+	
+    <script type="text/C#" runat="server">
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            Zippy.Web.UI.XControls.XHtmlAnchor aList = new Zippy.Web.UI.XControls.XHtmlAnchor();
+            aList.InnerHtml = R.V("List");
+            aList.HRef = "/<#=table.Name#>/Index";
+            panel.ToolButtons.Add(aList);
+			
+            Zippy.Web.UI.XControls.XHtmlAnchor aCreate = new Zippy.Web.UI.XControls.XHtmlAnchor();
+            aCreate.InnerHtml = R.V("Create");
+            aCreate.HRef = "/<#=table.Name#>/Create";
+            panel.ToolButtons.Add(aCreate);
+        }
+    </script>
+        
+</asp:Content>

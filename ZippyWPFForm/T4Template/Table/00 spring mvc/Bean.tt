@@ -1,0 +1,43 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".java" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+var javaClassName = ZippyCoder.Helper.ToJavaClassName(table.Name);
+
+#>
+package <#=project.Namespace#>.bean;
+import javax.persistence.*;
+import java.util.Date;
+
+
+@Entity
+@Table(name = "<#=table.Name#>")
+public class <#=javaClassName#>
+{
+<# foreach (Col col in table.Cols) 
+{	
+	if (col.IsCoding)
+	{
+	string colType = ZippyCoder.TypeConverter.ToJavaType(col.DataType);
+	string colName = ZippyCoder.Helper.ToJavaPropertyName(col.Name);
+	string setName = ZippyCoder.Helper.ToJavaPropertySetName(col.Name);
+	string getName = ZippyCoder.Helper.ToJavaPropertyGetName(col.Name);
+	string pkAttr = col.IsPK? "@Id\r\n	@GeneratedValue":"";
+	#>
+	<#=pkAttr#>
+	@Column(name="<#=col.Name#>")
+	private <#=colType#> <#=colName#>;
+	public <#=colType#> <#=getName#>(){
+		return <#=colName#>;
+	}
+	public void <#=setName#>(<#=colType#> <#=colName#>){
+		this.<#=colName#> = <#=colName#>;
+	}
+		
+<#
+	}
+}
+#>
+}

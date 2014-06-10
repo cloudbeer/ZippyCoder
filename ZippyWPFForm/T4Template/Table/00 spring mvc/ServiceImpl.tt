@@ -1,0 +1,41 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".java" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+var javaClassName = ZippyCoder.Helper.ToJavaClassName(table.Name);
+var varName =  ZippyCoder.Helper.ToJavaPropertyName(table.Name);
+
+#>
+package <#=project.Namespace#>.service;
+
+import <#=project.Namespace#>.dao.<#=javaClassName#>Dao;
+import <#=project.Namespace#>.model.<#=javaClassName#>;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class <#=javaClassName#>ServiceImpl implements <#=javaClassName#>Service
+{
+    @Autowired
+    <#=javaClassName#>Dao <#=varName#>Dao;
+
+    public void add<#=javaClassName#>(<#=javaClassName#> <#=varName#>) {
+        <#=varName#>Dao.add<#=javaClassName#>(<#=varName#>);
+    }
+
+    public List<<#=javaClassName#>> list<#=javaClassName#>() {
+        return <#=varName#>Dao.list<#=javaClassName#>();
+    }
+
+    public void remove<#=javaClassName#>(int id) {
+        <#=varName#>Dao.remove<#=javaClassName#>(id);
+    }
+
+    public <#=javaClassName#> find<#=javaClassName#>(int id) {
+        return <#=varName#>Dao.find<#=javaClassName#>(id);
+    }
+
+}

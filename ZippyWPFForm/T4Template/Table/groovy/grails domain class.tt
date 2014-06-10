@@ -1,0 +1,24 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".groovy" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+#>
+package <#=project.Namespace#>
+
+class <#=table.Name#> {
+<# foreach (Col col in table.Cols) 
+{	
+	if (col.IsCoding)
+	{
+	var colType = ZippyCoder.TypeConverter.ToGroovyType(col.DataType);#>
+	<#=colType#> <#=col.Name#>
+<#
+	}
+}
+#>
+	static constraints = {
+	}
+}
+	

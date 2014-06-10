@@ -1,0 +1,239 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cs" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+#>
+using System;
+using System.Collections;
+using System.Web.Mvc;
+using <#=project.Namespace#>.Entity;
+using <#=project.Namespace#>.Logic;
+using Zippy.Data.Collections;
+
+namespace <#=project.Namespace#>.Controllers
+{
+
+    public class <#=table.Name#>Controller : __Controller
+    {
+<#
+System.Text.StringBuilder sbQueryParams = new System.Text.StringBuilder();
+System.Text.StringBuilder sbQueryHash = new System.Text.StringBuilder();
+System.Text.StringBuilder sbRequestFormCheckBoxList = new System.Text.StringBuilder();
+System.Text.StringBuilder sbValidateMethods = new System.Text.StringBuilder();
+Col pkCol = null;
+Type pkType = typeof(int);
+
+foreach (Col col in table.Cols) 
+{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if (col.IsPK)
+	{
+	pkCol = col;
+	pkType = colType;
+	}
+	if ((col.UIColType & UIColTypes.Queryable) == UIColTypes.Queryable) 
+	{
+		if (colType == typeof(string)) 
+		{
+			sbQueryParams.Append("string q" + col.Name + ", ");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "\", q" + col.Name + ");");
+		}
+		else if (col.RenderType == RenderTypes.RadioButtonList || col.RenderType == RenderTypes.DropDownList || col.RenderType == RenderTypes.CheckBoxList)
+		{
+			sbQueryParams.Append(colType.Name + "? q" + col.Name + ", ");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "\", q" + col.Name + ");");
+		}
+		else if (colType.IsValueType)
+		{
+			sbQueryParams.Append(colType.Name + "? q" + col.Name + "Start, ");
+			sbQueryParams.Append(colType.Name + "? q" + col.Name + "End, ");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "Start\", q" + col.Name + "Start);");
+			sbQueryHash.AppendLine("            hs.Add(\"q" + col.Name + "End\", q" + col.Name + "End);");
+		}
+	}
+	
+	if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable && col.RenderType == RenderTypes.CheckBoxList)
+	{
+		sbRequestFormCheckBoxList.AppendLine("                string form" + col.Name + " = Request.Form[\"" + col.Name + "\"];");
+		sbRequestFormCheckBoxList.AppendLine("                entity." + col.Name + " = form" + col.Name + ".ToEnumInt32();");
+	}
+	
+	if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable) 
+	{
+		if (!col.IsNull && colType.IsValueType){		
+			sbValidateMethods.AppendLine("            if (!entity." + col.Name + ".HasValue)");
+			sbValidateMethods.AppendLine("                ModelState.AddModelError(\"" + col.Name + " required\", \""+ col.Title +"：必须填写。\");");
+			if (colType==typeof(string) && !string.IsNullOrEmpty(col.Length)){
+				sbValidateMethods.AppendLine("            else if (entity." + col.Name + ".Length > " + col.Length + ")");
+				sbValidateMethods.AppendLine("                ModelState.AddModelError(\"" + col.Name + " string length error\", \""+ col.Title +"：填写的内容太多。\");");
+			}
+		}
+		else if (!col.IsNull){		
+			sbValidateMethods.AppendLine("            if (string.IsNullOrEmpty(entity." + col.Name + "))");
+			sbValidateMethods.AppendLine("                ModelState.AddModelError(\"" + col.Name + " required\", \""+ col.Title +"：必须填写\");");
+			if (colType==typeof(string) && !string.IsNullOrEmpty(col.Length)){
+				sbValidateMethods.AppendLine("            else if (entity." + col.Name + ".Length > " + col.Length + ")");
+				sbValidateMethods.AppendLine("                ModelState.AddModelError(\"" + col.Name + " string length error\", \""+ col.Title +"：填写的内容太多\");");
+			}
+		}
+		else{
+			if (colType==typeof(string)  && !string.IsNullOrEmpty(col.Length)){
+				sbValidateMethods.AppendLine("            if (!string.IsNullOrEmpty(entity." + col.Name + ") && entity." + col.Name + ".Length > " + col.Length + " )");
+				sbValidateMethods.AppendLine("                ModelState.AddModelError(\"" + col.Name + " string length error\", \""+ col.Title +"：填写的内容太多\");");
+			}
+		}
+	}
+}
+#>
+
+
+		#region 验证
+        protected void Validate<#=table.Name#>(<#=table.Name#> entity)
+        {
+<#=sbValidateMethods#>
+        }
+		#endregion
+		
+		#region 查询
+        public ActionResult Index(int? PageIndex, int? PageSize, <#=sbQueryParams.ToString()#> int? orderCol)
+        {
+            ViewData.Add("PageSize", PageSize ?? 10);
+            int currentPageSize = PageSize ?? 10;
+            int currentPageIndex = PageIndex ?? 1;	
+			
+            Hashtable hs = new Hashtable();
+<#=sbQueryHash.ToString()#>
+            PaginatedList<<#=table.Name#>> result = <#=table.Name#>Helper.Query(currentPageSize, currentPageIndex, hs, orderCol);
+            result.QueryParameters = hs;
+            return View(result);
+        }
+		#endregion
+		
+		#region 详情
+
+        public ActionResult Details(<#=pkType#> id)
+        {
+                <#=table.Name#> entity = <#=table.Name#>Helper.Create(id);
+                if (entity != null)
+                    return View(entity);
+                else
+                    return View(new <#=table.Name#>());
+        }
+		#endregion
+				
+		#region 删除
+
+        public ActionResult Delete(<#=pkType#> id)
+        {
+            if (db.Delete<<#=table.Name#>>(id) > 0)
+				return this.Content("1");
+			else
+				return this.Content("0");
+        }
+ 
+        /// <summary>
+        /// 批量删除，仅适用id为整形的处理。
+        /// </summary>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [AcceptVerbs(HttpVerbs.Post)]
+        public ActionResult DeleteBatch(string ids)
+        {
+            string sql = "<#=colPK.Name#> in (" + ids + "0)";
+            //return Content("1");
+
+            if (db.Delete<<#=table.Name#>>(sql) > 0)
+                return this.Content("1");
+            else
+                return this.Content("0");
+        }
+
+		#endregion
+		
+		#region 修改和新增和查看详情
+		
+        public ActionResult Edit(<#=pkType#>? id, string act)
+        {
+            <#=table.Name#> entity = null;
+            <# if (pkType==typeof(Guid)) {  #>
+            if (id.HasValue && id!=Guid.Empty){
+                if (act == "detail")
+                {
+                    ViewBag.VTitle = "查看<#= table.Title #>信息";
+                    ViewBag.IsDetail = true;
+                }
+                else
+                {
+                    ViewBag.VTitle = "修改<#= table.Title #>信息";
+                }
+				entity = <#=table.Name#>Helper.Create(id.Value);
+            }
+            <#} else {#>
+            if (id.HasValue && id > 0){
+                if (act == "detail")
+                {
+                    ViewBag.VTitle = "查看<#= table.Title #>信息";
+                    ViewBag.IsDetail = true;
+                }
+                else
+                {
+                    ViewBag.VTitle = "修改<#= table.Title #>信息";
+                }
+				entity = <#=table.Name#>Helper.Create(id.Value);
+            }
+            <#}#>
+            else{
+                ViewBag.VTitle = "新增<#= table.Title #>";
+				entity = new <#=table.Name#>();
+            }
+             
+            return View(entity);
+        }
+
+        [AcceptVerbs(HttpVerbs.Post)]
+        [ValidateInput(false)]
+        public ActionResult Edit(<#=pkType#>? id, <#=table.Name#> entity)
+        {
+			entity.<#=colPK.Name#> = id;
+<#=sbRequestFormCheckBoxList.ToString()#>
+
+            Validate<#=table.Name#>(entity);
+            if (!ModelState.IsValid)
+                return View(entity);
+            try
+            {
+				<# if (pkType==typeof(Guid)) {  #>
+				if (id.HasValue && id != Guid.Empty){
+					db.Update(entity);
+				}
+                else
+                {
+                    entity.<#=colPK.Name#> = Guid.NewGuid();
+                    db.Insert(entity);
+                }
+				<#} else {#>
+				if (id.HasValue && id > 0){
+					db.Update(entity);
+				}
+                else
+                {
+					entity.<#=colPK.Name#> = null;
+                    db.Insert(entity);
+                }
+				<#}#>            
+                return Return();
+            }
+            catch(Exception ex)
+            {
+				ModelState.AddModelError("Common Error", ex);
+                return View(entity);
+            }
+        }
+		#endregion
+    }
+}

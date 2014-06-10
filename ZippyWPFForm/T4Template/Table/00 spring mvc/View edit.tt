@@ -1,0 +1,51 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".jsp" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+var javaClassName = ZippyCoder.Helper.ToJavaClassName(table.Name);
+var varName =  ZippyCoder.Helper.ToJavaPropertyName(table.Name);
+#>
+
+<%@ page session="false" language="java" pageEncoding="UTF-8"
+		 contentType="text/html;charset=UTF-8" %>
+<html>
+<head>
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+	<title>编辑<#=table.Title#></title>
+</head>
+<body>
+<div class="panel panel-default">
+	<div class="panel-heading clearfix">
+		<h4 class="pull-left">编辑<#=table.Title#> </h4>
+		<div class="pull-right">
+			<a class="btn btn-primary btn-small" href="edit">新增</a></div>
+	</div>
+	<div class="panel-body">
+
+		<form action="save" method="post">
+		<#
+		foreach (Col col in table.Cols)
+		{
+			if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable) 
+			{
+				string colName = ZippyCoder.Helper.ToJavaPropertyName(col.Name);
+		#>
+
+			<div class="form-group">
+				<label for="<#=colName#>"><#=col.Title#></label>
+				<input type="text" class="form-control" id="<#=colName#>" name="<#=colName#>" value="${<#=varName#>.<#=colName#>}" placeholder="<#=col.Title#>">
+
+				<p class="help-block"><#=col.Remark#></p>
+			</div>
+			<#
+			}
+		} #>
+			<button type="submit" class="btn btn-default">保存</button>
+		</form>
+
+	</div>
+</div>
+</body>
+</html>

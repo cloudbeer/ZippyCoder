@@ -1,0 +1,197 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cshtml" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+Type pkType = ZippyCoder.TypeConverter.ToNetType(colPK.DataType);
+
+System.Text.StringBuilder sbQueryUrl = new System.Text.StringBuilder();
+System.Text.StringBuilder sbQueryHtml = new System.Text.StringBuilder();
+#>
+
+@model Zippy.Data.Collections.PaginatedList<<#=project.Namespace#>.Entity.<#=table.Name#>>
+@using <#=project.Namespace#>.Entity
+@using <#=project.Namespace#>.Logic
+@{
+    ViewBag.Title = "<#=table.Title#>";
+    var orCol = Request["orderCol"];
+    int iorCol = orCol.ToInt32();
+}
+
+<div class="i-btns cf">
+    <a class="act-btn" href="/<#=table.Name.ToLower()#>/edit/?backto=@HttpUtility.UrlEncode(Request.RawUrl)">
+        <img src="/res/images/icons/create.png" alt="新建" /><b>新建</b></a>
+    <a class="act-btn" href="/<#=table.Name.ToLower()#>/?backto=@HttpUtility.UrlEncode(Request.RawUrl)">
+        <img src="/res/images/icons/list.png" alt="列表" /><b>列表</b></a>
+</div>
+<div class="query">
+        <div class="row">
+<#
+string prefix = "";
+foreach (Col col in table.Cols)
+{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Queryable) == UIColTypes.Queryable) 
+	{
+	#>
+            <label>
+                <span class="label"><#=col.Title#>：</span>
+	<#if (colType == typeof(string)) {#>			
+			<input type='text' name='q<#=col.Name#>' id='q<#=col.Name#>' />
+	<#
+			sbQueryUrl.Append(prefix + "+ \"&q" + col.Name + "=\" + encodeURIComponent($(\"#q" + col.Name + "\").val())");
+	} 
+	else if (colType == typeof(DateTime)) 
+	{#>
+		<input type='text' id='q<#=col.Name#>Start' class='textbox w3' /> -
+		<input type='text'  id='q<#=col.Name#>End' class='textbox w3' />
+	<#
+			sbQueryUrl.Append(prefix + "+ \"&q" + col.Name + "Start=\" + encodeURIComponent($(\"#q" + col.Name + "Start\").val())");
+			sbQueryUrl.Append(prefix + "+ \"&q" + col.Name + "End=\" + encodeURIComponent($(\"#q" + col.Name + "End\").val())");
+	}
+	else if (colType.IsValueType)
+	{#>		
+		<input type='text'  id='q<#=col.Name#>Start' class='textbox w1' /> -
+		<input type='text' id='q<#=col.Name#>End' class='textbox w1' />
+	<#
+			sbQueryUrl.Append(prefix + "+ \"&q" + col.Name + "Start=\" + encodeURIComponent($(\"#q" + col.Name + "Start\").val())");
+			sbQueryUrl.Append(prefix + "+ \"&q" + col.Name + "End=\" + encodeURIComponent($(\"#q" + col.Name + "End\").val())");
+	}
+	#>
+            </label>
+<#
+	}
+}
+#>
+			<button id="bQuery">搜索</button>
+        </div>
+</div>
+
+
+<table class="table">
+    <tr class="header">
+<#
+// 此处做了简化：将列表列作为可排序列，原来的可排序属性无效。
+int listIndex = 1;
+foreach (Col col in table.Cols)
+{
+	if ((col.UIColType & UIColTypes.Listable) == UIColTypes.Listable) 
+	{
+#>
+					<th>
+						<#=col.Title#>
+                        @if (iorCol == <#=listIndex#>)
+                           {
+                        <i title="点击排序" class="icon i_sort i_asc" rel="<#=listIndex+1#>"></i>
+                        }
+                           else if (iorCol == <#=listIndex+1#>)
+                           { 
+                        <i title="点击排序" class="icon i_sort i_desc" rel="<#=listIndex#>"></i>
+                        }
+                           else
+                           { 
+                        <i title="点击排序" class="icon i_sort i_nosort" rel="<#=listIndex#>"></i>
+                        }
+					</th>
+<#
+		listIndex+=2;
+	}
+}
+#>
+                    <th>
+                        操作
+                    </th>
+					
+                </tr>
+                
+                    @if (Model.Count > 0)
+                    {
+                        foreach (var item in Model)
+                        {
+                <tr data-id="@item.<#=colPK.Name#>" rel='item'>
+					<#
+foreach (Col col in table.Cols)
+{
+		Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Listable) == UIColTypes.Listable) 
+	{
+#>
+                    <td>
+                        @item.<#=col.Name#>
+                    </td>
+<#
+	}
+	else if (colType==typeof(DateTime)){
+#>
+                    <td>
+                        @item.<#=col.Name#>.Value.ToString("yyyy-MM-dd")
+                    </td>
+<#
+	}
+}
+#>
+
+                    <td>
+						<button class="mini-button modi">改</button>
+						<button class="mini-button delete">删</button>
+						<button class="mini-button detail">详情</button>
+                    </td>
+                </tr>
+                
+                    }
+                    }
+                    else
+                    { 
+                <!-- 没有数据的时候显示 -->
+                <tr rel="item">
+                    <td colspan="100" class="msg-box h10">
+                        真奇怪，没有任何数据呢。
+                    </td>
+                </tr>
+                <!-- 没有数据的时候显示 -->
+                } 
+</table>
+			
+@Html.Raw(Model.ToPagerHtml("<#=table.Name.ToLower()#>", "Index", ViewBag.PageSize))
+		
+<script type="text/javascript">
+    var pageSize = @ViewBag.PageSize;
+    var controller = "/<#=table.Name.ToLower()#>";
+    var sortUrl = "@Html.Raw(Model.ToSortUrl())";
+
+</script>
+<script type="text/javascript">
+
+    $(function () {
+            $("#bQuery").click(function () {
+                window.location.href = controller + '/?PageSize=' + pageSize <#=sbQueryUrl#>;										
+            });
+        $(".modi").click(function () {
+            id = $(this).parent().parent().attr("data-id");
+            window.location = "/<#=table.Name.ToLower()#>/edit/" + id + "?backto=@HttpUtility.UrlEncode(Request.RawUrl)";
+        });
+        $(".delete").click(function () {
+            if (!confirm("请确认是否删除？"))
+                return;
+            xthis = $(this);
+            id = xthis.parent().parent().attr("data-id");
+            $.post("/<#=table.Name.ToLower()#>/delete/" + id, {}, function (res) {
+                if (!res.state) {
+                    alert(res.message);
+                    return;
+                }
+                xthis.parent().parent().remove();
+            });
+
+        });
+        $(".detail").click(function () {
+			xthis = $(this);
+            id = xthis.parent().parent().attr("data-id");
+			window.location="/<#=table.Name.ToLower()#>/detail/" + id;
+        });
+    });
+</script>

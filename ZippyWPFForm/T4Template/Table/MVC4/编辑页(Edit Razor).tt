@@ -1,0 +1,105 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".cshtml" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+Table table = host.Table;
+
+Col colPK = table.FindPKCol();
+Type pkType = ZippyCoder.TypeConverter.ToNetType(colPK.DataType);
+
+#>
+@model <#=project.Namespace#>.Entity.<#=table.Name#>
+@using <#=project.Namespace#>.Entity
+@using <#=project.Namespace#>.Logic
+@{
+    ViewBag.Title = "编辑 <#=table.Title#>";
+}
+<script type="text/javascript">
+	
+    $(function () {
+        var fvalidator = $("form").validate({
+            rules: {
+<#
+System.Text.StringBuilder sbAll = new System.Text.StringBuilder();
+foreach (Col col in table.Cols)
+{
+	System.Text.StringBuilder sb = new System.Text.StringBuilder();
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable) 
+	{
+		sb.Append(col.Name+": {");
+		if (!col.IsNull)
+			sb.Append("required: true,");
+		if (colType==typeof(string))
+			sb.Append("maxlength:"+col.Length + ",");
+		if (colType==typeof(int) || colType==typeof(float) ||colType==typeof(decimal))
+			sb.Append("number:true,");
+		
+		string sRules = sb.ToString();
+		if (sRules.EndsWith(","))
+			sRules = sRules.Substring(0, sRules.Length - 1);
+		sRules += "},\r\n";
+		sbAll.Append(sRules);
+	}
+}
+	string strAll = sbAll.ToString().Trim();
+		if (strAll.EndsWith(","))
+			strAll = strAll.Substring(0, strAll.Length - 1);
+#>
+		<#=strAll#>
+				}
+			});
+        });
+    </script>
+
+<div class="i-btns cf">
+    <a class="act-btn" href="/<#=table.Name.ToLower()#>/">
+        <img src="/res/images/icons/return.png" alt="返回" /><b>返回</b></a>
+</div>
+
+
+<div class="form">
+            @using (Html.BeginForm())
+			{
+
+<#
+foreach (Col col in table.Cols)
+{
+    System.Data.DbType xtyppe = ZippyCoder.TypeConverter.ToDbType(col.DataType);
+    Type colType = ZippyCoder.TypeConverter.ToNetType(col.DataType);
+	if ((col.UIColType & UIColTypes.Editable) == UIColTypes.Editable) 
+	{
+#>
+    <div class="row">
+        <label>
+            <span class="label"><#=col.Title#>：</span>            
+					<#if (col.RenderType == RenderTypes.TextBox) {#>
+                        @Html.TextBoxFor(s => s.<#=col.Name#>, new { placeholder = "<#=col.Remark#>", @class = "textbox w20" })
+					<#}else if (col.RenderType == RenderTypes.TextArea) {#>
+                        @Html.TextAreaFor(s => s.<#=col.Name#>, new { placeholder = "<#=col.Remark#>", @class = "textarea w20", rows="10" })
+					<#} else if (col.RenderType == RenderTypes.Html) { #>
+						@Html.TextAreaFor(s => s.<#=col.Name#>)
+						<script type="text/javascript">
+							$(function(){
+								$("#<#=col.Name#>").ckeditor();
+							});
+						</script>
+					<#}#>
+        </label>
+    </div>
+
+<#
+	}
+}
+#>
+	
+    <div class="row">
+        <label>
+            <span class="label empty"></span>
+            <input type="submit" value="保存" class="button" id="xsubmit" />
+        </label>
+    </div>
+}
+</div>

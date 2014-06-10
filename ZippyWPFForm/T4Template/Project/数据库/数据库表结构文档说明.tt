@@ -1,0 +1,184 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".htm" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+#>
+<!doctype html>
+<html>
+<head>
+	<title>数据库设计说明</title>
+	<style type="text/css">
+		body {
+			font-size: 14px;
+			font-family: Verdana;
+			text-align: center;
+		}
+		#wrapper {
+			width: 960px;
+			text-align: left;
+			margin: 0 auto;
+		}
+		table {
+			 border-collapse: collapse;
+			 border-spacing: 0;
+			}
+		td {
+			font-size: 12px;
+			overflow: hidden;
+			border:1px solid #e6e6e6;
+			padding:8px;
+		}
+		.big {
+			font-size: 16px;
+		}
+		.small {
+			font-size: 12px;
+		}
+		.tr {
+			background: #fff;
+		}
+		.auto_tr {
+			background:#eee;
+		}
+		.header_table {
+			background: #a1d255;
+			color: #fff;
+			font-weight: bold;
+			font-size: 16px;
+			margin-top:20px;
+			overflow:auto;
+			zoom:1;
+		}
+		.header_table td {
+			font-size: 14px;
+			border:0;
+			line-height:25px;
+		}
+		.content_table {
+			background: #eee;
+			margin:1px 0 0 0;
+		}
+		.content_table .header {
+			background: #f5f5f5;
+		}
+		.content_table .header td {
+			font-weight: bold;
+			padding:10px 0;
+		}
+		#menu ul li {
+			list-style:none ;
+		}
+		#menu ul li a{
+			display:block;
+			text-decoration:none;
+			padding: 3px 0;
+		}
+		#menu ul li:hover{ background:#f2f2f2;}
+		ul, li { 
+			margin:0 ;
+			padding:0;
+		}
+		a{ color:#666;}
+		a:hover {
+			color: #63a200;
+		}
+		.back_top{ padding:10px 0 20px 0; float:right; text-align:right;}
+
+	</style>
+</head>
+<body>
+	<div id="wrapper">
+		<h1 style="text-align: center">
+			<#=project.Title#> 的数据库设计说明</h1>
+		<a name="menu"></a>
+		<p>
+			<#=project.Remark#>
+		</p>
+		<div id="menu">
+			<ul><# foreach (Table table in project.Tables){#>
+				<li><a href="#<#=table.Name#>"><span>▶</span> <#=table.Name#> : <#=table.Title#></a></li>
+			<#}#></ul>
+		</div>
+		
+		<# foreach (Table table in project.Tables){#>
+		<a name="<#=table.Name#>"></a>
+		<table width="100%" border="0" cellpadding="6" cellspacing="0" class="header_table">
+			<tr>
+				<td style="padding: 10px 15px">
+					<b>表名</b>：<#=table.Name#><br />
+					<b>名称</b>：<#=table.Title#><br />
+					<b>备注</b>：<#=table.Remark#>
+				</td>
+			</tr>
+		</table>
+		<table width="100%" border="0" cellpadding="4" cellspacing="1" class="content_table">
+			<tr align="center" class="header">
+				<td style="width:120px">
+					名称
+				</td>
+				<td style="width:120px">
+					说明
+				</td>
+				<td style="width:100px">
+					类型
+				</td>
+				<td style="width:60px">
+					允许空
+				</td>
+				<td style="width:60px">
+					唯一
+				</td>
+				<td style="width:100px">
+					默认值
+				</td>
+				<td style="width:140px">
+					外键
+				</td>
+				<td>
+					备注
+				</td>
+			</tr><# foreach (Col col in table.Cols) {
+					string trClass="tr";			
+					if (col.Name.ToLower()=="create_date" || col.Name.ToLower()=="creator"
+						|| col.Name.ToLower()=="update_date" || col.Name.ToLower()=="updater"
+						|| col.Name.ToLower()=="extend_data" || col.Name.ToLower()=="remark") 
+					{
+						trClass = "auto_tr";
+					} 
+				#>
+			<tr class="<#=trClass#>">
+				<td>
+					<#if (col.IsPK) {#><font style="font-family: Webdings; color: red">m</font><#}#> <#=col.Name#>
+				</td>
+				<td>
+					<#=col.Title#>
+				</td>
+				<td>
+					<#=col.DataType#>
+					<# if (!String.IsNullOrEmpty(col.Length)){#>
+						(<#=col.Length#>)
+					<#}#>
+				</td>
+				<td align="center">
+					<#=col.IsNull?"":"不可空"#>
+				</td>
+				<td align="center">
+					<#=col.Unique?"唯一":""#>
+				</td>
+				<td>
+					<#=col.Default#>&nbsp;
+				</td>
+				<td>
+					<#=col.RefTable#> - <#=col.RefCol#> 
+				</td>
+				<td>
+					<#=col.Remark#>&nbsp;
+				</td>
+			</tr><#}#>
+		</table>
+		<a href="#menu" class="back_top">返回菜单</a>		
+		<#}#>
+	</div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+﻿<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".sql" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+
+foreach (Table table in project.Tables) {
+
+ WriteLine("drop table ["+table.Name+"];");
+ WriteLine("");
+ 
+}
+#>
