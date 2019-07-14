@@ -1,0 +1,17 @@
+<#@ template language="C#" HostSpecific="True" #>
+<#@ output extension=".json" #>
+<# 
+ZippyT4Host host = (ZippyT4Host)(Host);
+Project project = host.Project;
+#>
+{
+<# foreach (Table table in project.Tables) { #>
+"<#=table.Name.ToLower()#>":{
+	<# 
+	foreach(Col col in table.Cols) { 
+	#>
+	"<#=col.Name.Substring(0,1).ToLower() + col.Name.Substring(1,col.Name.Length-1) #>": "",
+	<# } #>
+},
+<# } #>
+}

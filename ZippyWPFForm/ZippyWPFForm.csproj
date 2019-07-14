@@ -74,7 +74,7 @@
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.TextTemplating, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -211,13 +211,29 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
-    <None Include="ZippyWPFForm_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="App.ico" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.VisualStudio.TextTemplating.dll" />
+    <Content Include="T4Template\Project\MySQL\MySql Create Table.tt">
+      <LastGenOutput>MySql 建表.my.sql</LastGenOutput>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="T4Template\Project\mock-data.tt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="T4Template\Project\table.col.tt">
+      <LastGenOutput>table.col.json</LastGenOutput>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Content Include="T4Template\Project\数据库表结构文档说明.tt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="T4Template\Table\通用纯实体.tt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Resource Include="icons\App.ico" />
     <Resource Include="icons\copy.png" />
     <Resource Include="icons\delete.png" />
@@ -270,6 +286,7 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
